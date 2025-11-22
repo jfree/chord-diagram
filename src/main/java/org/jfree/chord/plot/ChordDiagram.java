@@ -26,6 +26,7 @@ public class ChordDiagram extends Plot {
     private Map<String, Paint> sectionPaintMap;
     private ChordNodeLabelGenerator nodeToolTipGenerator;
 
+    private final int ticksPerFullCircle = 50;
     private final Font scaleFont = new Font("SansSerif", Font.PLAIN, 11);
     private final Font labelFont = new Font("SansSerif", Font.PLAIN, 15);
 
@@ -141,8 +142,11 @@ public class ChordDiagram extends Plot {
                 Math.toDegrees(endAngle - startAngle - spacing),
                 Arc2D.OPEN);
         g2.draw(circle);
-        for (int i = 0; i <= 5; i++) {
-            var a = startAngle + spacing + 0.2 * i * (endAngle - startAngle - spacing);
+
+        var angleForOneTick = 2 * Math.PI / ticksPerFullCircle;
+        var numberOfTicks = (endAngle - startAngle - spacing) / angleForOneTick;
+        for (int i = 0; i < numberOfTicks; i++) {
+            var a = startAngle + spacing + i * angleForOneTick;
             var x1 = (float) (cx + r * Math.cos(a));
             var y1 = (float) (cy - r * Math.sin(a));
             var x2 = x1 + 0.012 * r * Math.cos(a);
@@ -150,12 +154,14 @@ public class ChordDiagram extends Plot {
             var line = new Line2D.Double(x1, y1, x2, y2);
             g2.draw(line);
 
-            var value = i / 5.0d * totalValue;
+            var value = i / numberOfTicks * totalValue;
             var val = String.format("%2.0f", value);
             var x3 = (float) (x1 + 0.06 * r * Math.cos(a));
             var y3 = (float) (y1 - 0.06 * r * Math.sin(a));
             g2.setFont(scaleFont);
-            TextUtils.drawRotatedString(val, g2, x3, y3, TextAnchor.CENTER, 0.5 * Math.PI - a, TextAnchor.CENTER);
+            if (i > 0) {
+                TextUtils.drawRotatedString(val, g2, x3, y3, TextAnchor.CENTER, 0.5 * Math.PI - a, TextAnchor.CENTER);
+            }
         }
     }
 
