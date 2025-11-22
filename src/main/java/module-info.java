@@ -3,5 +3,5 @@
  */
 module JFreeStarter {
     requires org.jfree.jfreechart;
-     requires java.desktop;
+    requires java.desktop;
 }
