@@ -50,7 +50,8 @@ public class ChordDiagram extends Plot {
                     Math.toDegrees(startAngle),
                     Math.toDegrees(angle),
                     Arc2D.PIE);
-
+            
+            startAngle = endAngle;
             // TODO useful colors
             var c = (int) (Math.random() * 255);
             g2.setColor(new Color(c, c, c));
