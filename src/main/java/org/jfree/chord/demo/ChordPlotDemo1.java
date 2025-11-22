@@ -2,6 +2,7 @@ package org.jfree.chord.demo;
 
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
+import org.jfree.chart.ui.UIUtils;
 import org.jfree.chord.data.ChordDataset;
 import org.jfree.chord.plot.ChordDiagram;
 
@@ -33,6 +34,14 @@ public class ChordPlotDemo1 extends JFrame {
         ChordDiagram plot = new ChordDiagram(dataset);
         plot.setBackgroundPaint(Color.BLACK);
         return new JFreeChart(title, plot);
+    }
+
+    public static void main(String[] args) {
+        ChordPlotDemo1 demo = new ChordPlotDemo1("JFreeChart: ChordPlotDemo1.java");
+        demo.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        demo.pack();
+        UIUtils.centerFrameOnScreen(demo);
+        demo.setVisible(true);
     }
 
 }
