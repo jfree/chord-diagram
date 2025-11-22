@@ -234,12 +234,16 @@ public class ChordDiagram extends Plot {
                     strokeColor = new Color(128, 128, 128, 120);
                 }
                 g2.setColor(strokeColor);
-                g2.setStroke(new java.awt.BasicStroke((float) Math.max(1.0, seg.value / 10.0f))); // optional: thickness
-                                                                                                  // by value
+
+                // thickness proportional to value, with optional scaling factor
+                float scaleFactor = 3.0f; // adjust to make lines thicker/thinner
+                float thickness = Math.max(0.5f, (float) seg.value * scaleFactor);
+                g2.setStroke(new java.awt.BasicStroke(thickness));
 
                 java.awt.geom.QuadCurve2D curve = new java.awt.geom.QuadCurve2D.Double();
                 curve.setCurve(xOut, yOut, ctrlX, ctrlY, xIn, yIn);
                 g2.draw(curve);
+
             }
         }
 
