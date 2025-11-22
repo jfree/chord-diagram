@@ -30,6 +30,7 @@ public class ChordDiagram extends Plot {
     public void draw(Graphics2D g2, Rectangle2D area, Point2D anchor, PlotState parentState, PlotRenderingInfo info) {
         // use default JFreeChart background handling
         drawBackground(g2, area);
+        g2.setColor(Color.LIGHT_GRAY);
 
         double r = Math.min(area.getWidth(), area.getHeight()) / 2 * 0.8;
         double cx = area.getCenterX();
@@ -53,9 +54,6 @@ public class ChordDiagram extends Plot {
                     Arc2D.PIE);
 
             g2.fill(arc);
-            startAngle = endAngle;
         }
-
-        g2.setColor(Color.LIGHT_GRAY);
     }
 }
