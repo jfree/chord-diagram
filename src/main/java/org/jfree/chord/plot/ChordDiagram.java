@@ -1,5 +1,6 @@
 package org.jfree.chord.plot;
 
+import org.jfree.chart.entity.EntityCollection;
 import org.jfree.chart.plot.Plot;
 import org.jfree.chart.plot.PlotRenderingInfo;
 import org.jfree.chart.plot.PlotState;
@@ -19,9 +20,12 @@ public class ChordDiagram extends Plot {
 
     private Map<String, Paint> sectionPaintMap;
 
+    private ChordNodeLabelGenerator nodeToolTipGenerator;
+
     public ChordDiagram(ChordDataset dataset) {
         this.dataset = dataset;
         this.sectionPaintMap = new HashMap<>();
+        this.nodeToolTipGenerator = new DefaultChordNodeLabelGenerator();
     }
 
     @Override
@@ -35,11 +39,24 @@ public class ChordDiagram extends Plot {
         fireChangeEvent();
     }
 
+    public ChordNodeLabelGenerator getNodeToolTipGenerator() {
+        return nodeToolTipGenerator;
+    }
+
+    public void setNodeToolTipGenerator(ChordNodeLabelGenerator nodeToolTipGenerator) {
+        this.nodeToolTipGenerator = nodeToolTipGenerator;
+    }
+
     @Override
     public void draw(Graphics2D g2, Rectangle2D area, Point2D anchor, PlotState parentState, PlotRenderingInfo info) {
         // use default JFreeChart background handling
         drawBackground(g2, area);
-        g2.setColor(Color.LIGHT_GRAY);
+
+        EntityCollection entities = null;
+        if (info != null) {
+            info.setPlotArea(area);
+            entities = info.getOwner().getEntityCollection();
+        }
 
         double r = Math.min(area.getWidth(), area.getHeight()) / 2 * 0.8;
         double cx = area.getCenterX();
@@ -80,13 +97,24 @@ public class ChordDiagram extends Plot {
             Area ring = new Area(outerArc);
             ring.subtract(new Area(innerArc));
 
-            startAngle = endAngle;
             var color = this.sectionPaintMap.get(key);
             if (color == null) {
                 color = Color.GRAY;
             }
             g2.setPaint(color);
             g2.fill(ring);
+
+            if (entities != null) {
+                String toolTipText = null;
+                if (nodeToolTipGenerator != null) {
+                    toolTipText = nodeToolTipGenerator.generateLabel(key, dataset);
+                }
+                entities.add(new ChordNodeEntity(key, ring, toolTipText));
+            }
+
+            // TODO add a separate entity for the connector and have a tooltip to show the values
+
+            startAngle = endAngle;
         }
     }
 }
