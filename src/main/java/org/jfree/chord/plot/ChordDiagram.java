@@ -8,7 +8,10 @@ import org.jfree.chart.text.TextUtils;
 import org.jfree.chart.ui.TextAnchor;
 import org.jfree.chord.data.ChordDataset;
 
-import java.awt.*;
+import java.awt.Color;
+import java.awt.Font;
+import java.awt.Graphics2D;
+import java.awt.Paint;
 import java.awt.geom.Arc2D;
 import java.awt.geom.Area;
 import java.awt.geom.Line2D;
@@ -20,10 +23,11 @@ import java.util.Map;
 public class ChordDiagram extends Plot {
 
     private ChordDataset dataset;
-
     private Map<String, Paint> sectionPaintMap;
-
     private ChordNodeLabelGenerator nodeToolTipGenerator;
+
+    private final Font scaleFont = new Font("SansSerif", Font.PLAIN, 11);
+    private final Font labelFont = new Font("SansSerif", Font.PLAIN, 15);
 
     public ChordDiagram(ChordDataset dataset) {
         this.dataset = dataset;
@@ -81,7 +85,7 @@ public class ChordDiagram extends Plot {
             double angle = (keyFlow / totalFlow) * 2 * Math.PI; // arc length in radians
             double endAngle = startAngle + angle;
 
-            var spacing = 2.0 * Math.PI * 0.025 / dataset.getKeys().size();
+            var spacing = 2.0 * Math.PI * 0.05 / dataset.getKeys().size();
 
             // Outer arc (full radius)
             Arc2D outerArc = new Arc2D.Double(
@@ -118,36 +122,54 @@ public class ChordDiagram extends Plot {
             }
 
             // TODO add a separate entity for the connector and have a tooltip to show the values
-
-            {
-                g2.setPaint(color);
-                var a = 0.5 * (startAngle + endAngle);
-
-                var x = (float) (cx + 1.15 * r * Math.cos(a));
-                var y = (float) (cy - 1.15 * r * Math.sin(a));
-                TextUtils.drawRotatedString(key, g2, x, y, TextAnchor.CENTER, 0.5 * Math.PI - a, TextAnchor.CENTER);
-            }
-
-            {
-                g2.setColor(Color.BLACK);
-                var circle = new Arc2D.Double(
-                        cx - r, cy - r, 2 * r, 2 * r,
-                        Math.toDegrees(startAngle + spacing),
-                        Math.toDegrees(angle - spacing),
-                        Arc2D.OPEN);
-                g2.draw(circle);
-                for (int i = 0; i <= 5; i++) {
-                    var a = startAngle + spacing + 0.2 * i * (endAngle - startAngle - spacing);
-                    var x1 = (float) (cx + r * Math.cos(a));
-                    var y1 = (float) (cy - r * Math.sin(a));
-                    var x2 = x1 + 0.03 * r * Math.cos(a);
-                    var y2 = y1 - 0.03 * r * Math.sin(a);
-                    var line = new Line2D.Double(x1, y1, x2, y2);
-                    g2.draw(line);
-                }
-            }
-
+            drawLabel(g2, cx, cy, r, startAngle, endAngle, color, key);
+            drawScale(g2, cx, cy, r, startAngle, endAngle, spacing, keyFlow);
             startAngle = endAngle;
         }
+    }
+
+    private void drawScale(
+            Graphics2D g2,
+            double cx, double cy, double r,
+            double startAngle, double endAngle, double spacing,
+            double totalValue) {
+
+        g2.setColor(Color.BLACK);
+        var circle = new Arc2D.Double(
+                cx - r, cy - r, 2 * r, 2 * r,
+                Math.toDegrees(startAngle + spacing),
+                Math.toDegrees(endAngle - startAngle - spacing),
+                Arc2D.OPEN);
+        g2.draw(circle);
+        for (int i = 0; i <= 5; i++) {
+            var a = startAngle + spacing + 0.2 * i * (endAngle - startAngle - spacing);
+            var x1 = (float) (cx + r * Math.cos(a));
+            var y1 = (float) (cy - r * Math.sin(a));
+            var x2 = x1 + 0.012 * r * Math.cos(a);
+            var y2 = y1 - 0.012 * r * Math.sin(a);
+            var line = new Line2D.Double(x1, y1, x2, y2);
+            g2.draw(line);
+
+            var value = i / 5.0d * totalValue;
+            var val = String.format("%2.0f", value);
+            var x3 = (float) (x1 + 0.06 * r * Math.cos(a));
+            var y3 = (float) (y1 - 0.06 * r * Math.sin(a));
+            g2.setFont(scaleFont);
+            TextUtils.drawRotatedString(val, g2, x3, y3, TextAnchor.CENTER, 0.5 * Math.PI - a, TextAnchor.CENTER);
+        }
+    }
+
+    private void drawLabel(
+            Graphics2D g2,
+            double cx, double cy, double r,
+            double startAngle, double endAngle,
+            Paint paint, String label) {
+        g2.setPaint(paint);
+        var a = 0.5 * (startAngle + endAngle);
+
+        var x = (float) (cx + 1.14 * r * Math.cos(a));
+        var y = (float) (cy - 1.14 * r * Math.sin(a));
+        g2.setFont(labelFont);
+        TextUtils.drawRotatedString(label, g2, x, y, TextAnchor.CENTER, 0.5 * Math.PI - a, TextAnchor.CENTER);
     }
 }
