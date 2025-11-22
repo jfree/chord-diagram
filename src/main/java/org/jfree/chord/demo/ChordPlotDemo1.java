@@ -4,6 +4,7 @@ import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.ui.UIUtils;
 import org.jfree.chord.data.ChordDataset;
+import org.jfree.chord.data.DefaultChordDataset;
 import org.jfree.chord.plot.ChordDiagram;
 
 import javax.swing.*;
@@ -26,13 +27,22 @@ public class ChordPlotDemo1 extends JFrame {
     }
 
     private static ChordDataset createDataset() {
-        return null; // TODO
-        //DefaultChordDataset<String> dataset = new DefaultFlowDataset<>();
+        var result = new DefaultChordDataset();
+        result.addEntry("KEY1", "KEY1", 2d);
+        result.addEntry("KEY1", "KEY2", 3d);
+        result.addEntry("KEY1", "KEY3", 4d);
+        result.addEntry("KEY2", "KEY1", 5d);
+        result.addEntry("KEY2", "KEY2", 6d);
+        result.addEntry("KEY2", "KEY3", 7d);
+        result.addEntry("KEY3", "KEY1", 8d);
+        result.addEntry("KEY3", "KEY2", 9d);
+        result.addEntry("KEY3", "KEY3", 12d);
+        return result;
     }
 
     private static JFreeChart createChart(String title, ChordDataset dataset) {
         ChordDiagram plot = new ChordDiagram(dataset);
-        plot.setBackgroundPaint(Color.BLACK);
+        plot.setBackgroundPaint(Color.GREEN);
         return new JFreeChart(title, plot);
     }
 

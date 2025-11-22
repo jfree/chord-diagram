@@ -1,17 +1,15 @@
 package org.jfree.chord.plot;
 
-import java.awt.Color;
-import java.awt.Graphics2D;
-import java.awt.Shape;
-import java.awt.geom.Arc2D;
-import java.awt.geom.Ellipse2D;
-import java.awt.geom.Point2D;
-import java.awt.geom.Rectangle2D;
-
 import org.jfree.chart.plot.Plot;
 import org.jfree.chart.plot.PlotRenderingInfo;
 import org.jfree.chart.plot.PlotState;
 import org.jfree.chord.data.ChordDataset;
+
+import java.awt.Color;
+import java.awt.Graphics2D;
+import java.awt.geom.Arc2D;
+import java.awt.geom.Point2D;
+import java.awt.geom.Rectangle2D;
 
 public class ChordDiagram extends Plot {
 
@@ -53,6 +51,9 @@ public class ChordDiagram extends Plot {
                     Math.toDegrees(angle),
                     Arc2D.PIE);
 
+            // TODO useful colors
+            var c = (int) (Math.random() * 255);
+            g2.setColor(new Color(c, c, c));
             g2.fill(arc);
         }
     }
