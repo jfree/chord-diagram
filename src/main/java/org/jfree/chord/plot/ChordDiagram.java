@@ -186,6 +186,62 @@ public class ChordDiagram extends Plot {
                 g2.fillOval((int) (mx - 2), (int) (my - 2), 4, 4);
             }
         }
+
+        // --- Step 2: draw flows between outflow and inflow with source group color ---
+        double flowInnerR = innerR; // start/end radius inside the ring
+        for (String sourceGroup : groupSegments.keySet()) {
+            java.util.List<ArcSegment> segments = groupSegments.get(sourceGroup);
+            for (ArcSegment seg : segments) {
+                if (!seg.type.equals("outflow"))
+                    continue; // only outflow
+
+                String targetGroup = seg.targetGroup;
+                java.util.List<ArcSegment> targetSegments = groupSegments.get(targetGroup);
+                if (targetSegments == null)
+                    continue;
+
+                // find corresponding inflow segment
+                ArcSegment inflowSeg = null;
+                for (ArcSegment tSeg : targetSegments) {
+                    if (tSeg.type.equals("inflow") && tSeg.targetGroup.equals(sourceGroup)) {
+                        inflowSeg = tSeg;
+                        break;
+                    }
+                }
+                if (inflowSeg == null)
+                    continue;
+
+                // compute mid points
+                double midOut = (seg.startAngle + seg.endAngle) / 2;
+                double midIn = (inflowSeg.startAngle + inflowSeg.endAngle) / 2;
+
+                double xOut = cx + flowInnerR * Math.cos(midOut);
+                double yOut = cy - flowInnerR * Math.sin(midOut);
+                double xIn = cx + flowInnerR * Math.cos(midIn);
+                double yIn = cy - flowInnerR * Math.sin(midIn);
+
+                // draw curve
+                double ctrlX = cx;
+                double ctrlY = cy;
+
+                Paint sourceColor = sectionPaintMap.getOrDefault(sourceGroup, Color.GRAY);
+                Color strokeColor;
+                if (sourceColor instanceof Color) {
+                    Color c = (Color) sourceColor;
+                    strokeColor = new Color(c.getRed(), c.getGreen(), c.getBlue(), 120); // semi-transparent
+                } else {
+                    strokeColor = new Color(128, 128, 128, 120);
+                }
+                g2.setColor(strokeColor);
+                g2.setStroke(new java.awt.BasicStroke((float) Math.max(1.0, seg.value / 10.0f))); // optional: thickness
+                                                                                                  // by value
+
+                java.awt.geom.QuadCurve2D curve = new java.awt.geom.QuadCurve2D.Double();
+                curve.setCurve(xOut, yOut, ctrlX, ctrlY, xIn, yIn);
+                g2.draw(curve);
+            }
+        }
+
     }
 
     private void drawScale(
