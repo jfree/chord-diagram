@@ -48,7 +48,7 @@ public class ChordPlotDemo1 extends JFrame {
         // are added to the dataset dynamically
         var keys = dataset.getKeys();
         for (var key : keys) {
-            plot.setSectionPaint(key, DEFAULT_COLORS.get(keys.indexOf(key)));
+            plot.setSectionPaint(key, SAMPLE_COLORS.get(keys.indexOf(key)));
         }
         return new JFreeChart(title, plot);
     }
@@ -72,6 +72,19 @@ public class ChordPlotDemo1 extends JFrame {
             new Color(186, 214, 150),
             new Color(217, 184, 226),
             new Color(201, 212, 116)
+    );
+
+    private static final List<Paint> SAMPLE_COLORS = List.of(
+            new Color(95, 180, 126),
+            new Color(64,74,133),
+            new Color(133, 203, 104),
+            new Color(67, 128, 140),
+            new Color(76, 156, 138),
+            new Color(67,41,116),
+            new Color(189,221,81),
+            new Color(63,102,138),
+            new Color(249,232,85),
+            new Color(63,17,81)
     );
 
 }
