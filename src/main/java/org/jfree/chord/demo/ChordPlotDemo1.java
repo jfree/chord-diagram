@@ -9,6 +9,7 @@ import org.jfree.chord.plot.ChordDiagram;
 
 import javax.swing.*;
 import java.awt.*;
+import java.util.List;
 
 public class ChordPlotDemo1 extends JFrame {
 
@@ -42,7 +43,13 @@ public class ChordPlotDemo1 extends JFrame {
 
     private static JFreeChart createChart(String title, ChordDataset dataset) {
         ChordDiagram plot = new ChordDiagram(dataset);
-        plot.setBackgroundPaint(Color.GREEN);
+
+        // initialise the colors - later we can ensure this is automatic, especially to handle when new sections
+        // are added to the dataset dynamically
+        var keys = dataset.getKeys();
+        for (var key : keys) {
+            plot.setSectionPaint(key, DEFAULT_COLORS.get(keys.indexOf(key)));
+        }
         return new JFreeChart(title, plot);
     }
 
@@ -53,5 +60,18 @@ public class ChordPlotDemo1 extends JFrame {
         UIUtils.centerFrameOnScreen(demo);
         demo.setVisible(true);
     }
+
+    private static final List<Paint> DEFAULT_COLORS = List.of(
+            new Color(239, 164, 127),
+            new Color(140, 228, 139),
+            new Color(155, 208, 227),
+            new Color(221, 228, 95),
+            new Color(118, 223, 194),
+            new Color(240, 166, 184),
+            new Color(231, 185, 98),
+            new Color(186, 214, 150),
+            new Color(217, 184, 226),
+            new Color(201, 212, 116)
+    );
 
 }

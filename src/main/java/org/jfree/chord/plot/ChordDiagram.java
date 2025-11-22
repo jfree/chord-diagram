@@ -5,24 +5,34 @@ import org.jfree.chart.plot.PlotRenderingInfo;
 import org.jfree.chart.plot.PlotState;
 import org.jfree.chord.data.ChordDataset;
 
-import java.awt.Color;
-import java.awt.Graphics2D;
+import java.awt.*;
 import java.awt.geom.Arc2D;
 import java.awt.geom.Area;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
+import java.util.HashMap;
+import java.util.Map;
 
 public class ChordDiagram extends Plot {
 
     private ChordDataset dataset;
 
+    private Map<String, Paint> sectionPaintMap;
+
     public ChordDiagram(ChordDataset dataset) {
         this.dataset = dataset;
+        this.sectionPaintMap = new HashMap<>();
     }
 
     @Override
     public String getPlotType() {
         return "ChordDiagram";
+    }
+
+    public void setSectionPaint(String key, Paint paint) {
+        // null argument check delegated...
+        this.sectionPaintMap.put(key, paint);
+        fireChangeEvent();
     }
 
     @Override
@@ -71,9 +81,11 @@ public class ChordDiagram extends Plot {
             ring.subtract(new Area(innerArc));
 
             startAngle = endAngle;
-            // TODO useful colors
-            var c = (int) (Math.random() * 255);
-            g2.setColor(new Color(c, c, c));
+            var color = this.sectionPaintMap.get(key);
+            if (color == null) {
+                color = Color.GRAY;
+            }
+            g2.setPaint(color);
             g2.fill(ring);
         }
     }
