@@ -8,6 +8,7 @@ import org.jfree.chord.data.ChordDataset;
 import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.geom.Arc2D;
+import java.awt.geom.Area;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
 
@@ -39,23 +40,41 @@ public class ChordDiagram extends Plot {
                 .mapToDouble(k -> dataset.getTotalOutflux(k) + dataset.getTotalInflux(k))
                 .sum();
 
+        /*
+         * Ordering convention: for each group, draw outflow first, start with the
+         * biggest value, when outflow
+         */
+        
         double startAngle = 0.0;
         for (String key : dataset.getKeys()) {
             double keyFlow = dataset.getTotalOutflux(key) + dataset.getTotalInflux(key);
             double angle = (keyFlow / totalFlow) * 2 * Math.PI; // arc length in radians
             double endAngle = startAngle + angle;
 
-            Arc2D arc = new Arc2D.Double(
+            // Outer arc (full radius)
+            Arc2D outerArc = new Arc2D.Double(
                     cx - r, cy - r, 2 * r, 2 * r,
                     Math.toDegrees(startAngle),
                     Math.toDegrees(angle),
                     Arc2D.PIE);
-            
+
+            // Inner arc (smaller radius to mask center)
+            double innerR = r * 0.95; // keep 5% thickness
+            Arc2D innerArc = new Arc2D.Double(
+                    cx - innerR, cy - innerR, 2 * innerR, 2 * innerR,
+                    Math.toDegrees(startAngle),
+                    Math.toDegrees(angle),
+                    Arc2D.PIE);
+
+            // Subtract inner from outer
+            Area ring = new Area(outerArc);
+            ring.subtract(new Area(innerArc));
+
             startAngle = endAngle;
             // TODO useful colors
             var c = (int) (Math.random() * 255);
             g2.setColor(new Color(c, c, c));
-            g2.fill(arc);
+            g2.fill(ring);
         }
     }
 }
