@@ -1,13 +1,5 @@
 package org.jfree.chord.plot;
 
-import org.jfree.chart.entity.EntityCollection;
-import org.jfree.chart.plot.Plot;
-import org.jfree.chart.plot.PlotRenderingInfo;
-import org.jfree.chart.plot.PlotState;
-import org.jfree.chart.text.TextUtils;
-import org.jfree.chart.ui.TextAnchor;
-import org.jfree.chord.data.ChordDataset;
-
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.Graphics2D;
@@ -20,7 +12,32 @@ import java.awt.geom.Rectangle2D;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.jfree.chart.entity.EntityCollection;
+import org.jfree.chart.plot.Plot;
+import org.jfree.chart.plot.PlotRenderingInfo;
+import org.jfree.chart.plot.PlotState;
+import org.jfree.chart.text.TextUtils;
+import org.jfree.chart.ui.TextAnchor;
+import org.jfree.chord.data.ChordDataset;
+
 public class ChordDiagram extends Plot {
+
+    private static class ArcSegment {
+        double startAngle;
+        double endAngle;
+        double value;
+        String type; // "outflow" or "inflow"
+        String targetGroup; // outflow target or inflow source
+
+        // constructor
+        ArcSegment(double startAngle, double endAngle, double value, String type, String targetGroup) {
+            this.startAngle = startAngle;
+            this.endAngle = endAngle;
+            this.value = value;
+            this.type = type;
+            this.targetGroup = targetGroup;
+        }
+    }
 
     private ChordDataset dataset;
     private Map<String, Paint> sectionPaintMap;
@@ -69,11 +86,16 @@ public class ChordDiagram extends Plot {
         float r = (float) (Math.min(area.getWidth(), area.getHeight()) / 2 * 0.8);
         double cx = area.getCenterX();
         double cy = area.getCenterY();
+        double innerR = r * 0.95;
+        var spacing = 2.0 * Math.PI * 0.05 / dataset.getKeys().size();
 
         // Calculate total flow of all nodes
         double totalFlow = dataset.getKeys().stream()
                 .mapToDouble(k -> dataset.getTotalOutflux(k) + dataset.getTotalInflux(k))
                 .sum();
+
+        // store segments for debug markers / flows
+        Map<String, java.util.List<ArcSegment>> groupSegments = new HashMap<>();
 
         /*
          * Ordering convention: for each group, draw outflow first, start with the
@@ -86,8 +108,6 @@ public class ChordDiagram extends Plot {
             double angle = (keyFlow / totalFlow) * 2 * Math.PI; // arc length in radians
             double endAngle = startAngle + angle;
 
-            var spacing = 2.0 * Math.PI * 0.05 / dataset.getKeys().size();
-
             // Outer arc (full radius)
             Arc2D outerArc = new Arc2D.Double(
                     cx - r, cy - r, 2 * r, 2 * r,
@@ -96,7 +116,6 @@ public class ChordDiagram extends Plot {
                     Arc2D.PIE);
 
             // Inner arc (smaller radius to mask center)
-            double innerR = r * 0.95; // keep 5% thickness
             Arc2D innerArc = new Arc2D.Double(
                     cx - innerR, cy - innerR, 2 * innerR, 2 * innerR,
                     Math.toDegrees(startAngle + spacing),
@@ -122,11 +141,112 @@ public class ChordDiagram extends Plot {
                 entities.add(new ChordNodeEntity(key, ring, toolTipText));
             }
 
-            // TODO add a separate entity for the connector and have a tooltip to show the values
+            // TODO add a separate entity for the connector and have a tooltip to show the
+            // values
             drawLabel(g2, cx, cy, r, startAngle, endAngle, color, key);
             drawScale(g2, cx, cy, r, startAngle, endAngle, spacing, keyFlow);
+
+            // --- Step1.5: compute segments aligned with ring ---
+            java.util.List<ArcSegment> segments = new java.util.ArrayList<>();
+            double cursor = startAngle + spacing / 2; // shift cursor by half spacing
+
+            // outflow segments
+            for (String target : dataset.getKeys()) {
+                double val = dataset.getValue(key, target);
+                if (val <= 0)
+                    continue;
+                double segAngle = val / keyFlow * (angle - spacing); // subtract spacing from total angle
+                ArcSegment seg = new ArcSegment(cursor, cursor + segAngle, val, "outflow", target);
+                segments.add(seg);
+                cursor += segAngle;
+            }
+
+            // inflow segments
+            for (String source : dataset.getKeys()) {
+                double val = dataset.getValue(source, key);
+                if (val <= 0)
+                    continue;
+                double segAngle = val / keyFlow * (angle - spacing);
+                ArcSegment seg = new ArcSegment(cursor, cursor + segAngle, val, "inflow", source);
+                segments.add(seg);
+                cursor += segAngle;
+            }
+
+            groupSegments.put(key, segments);
             startAngle = endAngle;
         }
+        // draw debug marker
+        double markerR = r + 10;
+        for (java.util.List<ArcSegment> segments : groupSegments.values()) {
+            for (ArcSegment seg : segments) {
+                double mid = (seg.startAngle + seg.endAngle) / 2;
+                // now mid already includes spacing offset
+                double mx = cx + markerR * Math.cos(mid);
+                double my = cy - markerR * Math.sin(mid);
+                g2.setColor(seg.type.equals("outflow") ? Color.RED : Color.BLUE);
+                g2.fillOval((int) (mx - 2), (int) (my - 2), 4, 4);
+            }
+        }
+
+        // --- Step 2: draw flows between outflow and inflow with source group color ---
+        double flowInnerR = innerR; // start/end radius inside the ring
+        for (String sourceGroup : groupSegments.keySet()) {
+            java.util.List<ArcSegment> segments = groupSegments.get(sourceGroup);
+            for (ArcSegment seg : segments) {
+                if (!seg.type.equals("outflow"))
+                    continue; // only outflow
+
+                String targetGroup = seg.targetGroup;
+                java.util.List<ArcSegment> targetSegments = groupSegments.get(targetGroup);
+                if (targetSegments == null)
+                    continue;
+
+                // find corresponding inflow segment
+                ArcSegment inflowSeg = null;
+                for (ArcSegment tSeg : targetSegments) {
+                    if (tSeg.type.equals("inflow") && tSeg.targetGroup.equals(sourceGroup)) {
+                        inflowSeg = tSeg;
+                        break;
+                    }
+                }
+                if (inflowSeg == null)
+                    continue;
+
+                // compute mid points
+                double midOut = (seg.startAngle + seg.endAngle) / 2;
+                double midIn = (inflowSeg.startAngle + inflowSeg.endAngle) / 2;
+
+                double xOut = cx + flowInnerR * Math.cos(midOut);
+                double yOut = cy - flowInnerR * Math.sin(midOut);
+                double xIn = cx + flowInnerR * Math.cos(midIn);
+                double yIn = cy - flowInnerR * Math.sin(midIn);
+
+                // draw curve
+                double ctrlX = cx;
+                double ctrlY = cy;
+
+                Paint sourceColor = sectionPaintMap.getOrDefault(sourceGroup, Color.GRAY);
+                Color strokeColor;
+                if (sourceColor instanceof Color) {
+                    Color c = (Color) sourceColor;
+                    strokeColor = new Color(c.getRed(), c.getGreen(), c.getBlue(), 120); // semi-transparent
+                } else {
+                    strokeColor = new Color(128, 128, 128, 120);
+                }
+                g2.setColor(strokeColor);
+
+                // thickness proportional to value, with optional scaling factor
+                float scaleFactor = 3.0f; // adjust to make lines thicker/thinner
+                float thickness = Math.max(0.5f, (float) seg.value * scaleFactor);
+                g2.setStroke(new java.awt.BasicStroke(thickness));
+
+                java.awt.geom.QuadCurve2D curve = new java.awt.geom.QuadCurve2D.Double();
+                curve.setCurve(xOut, yOut, ctrlX, ctrlY, xIn, yIn);
+                g2.draw(curve);
+
+            }
+        }
+
     }
 
     private void drawScale(
