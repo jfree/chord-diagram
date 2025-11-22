@@ -12,7 +12,10 @@ public class DefaultChordDataset extends AbstractDataset implements ChordDataset
 
     @Override
     public List<String> getKeys() {
-        return data.stream().map(r -> r.sourceKey).sorted().collect(Collectors.toList());
+        return data.stream().map(r -> r.sourceKey)
+                .sorted()
+                .distinct()
+                .collect(Collectors.toList());
     }
 
     @Override
